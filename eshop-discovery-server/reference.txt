@@ -1,0 +1,96 @@
+export PATH=$PATH:/Users/shobhitbhardwaj/ShobhiT/Softwares/mongodb-4.4.6/bin/
+cd ShobhiT/Softwares/mongodb-4.4.6/bin
+mongod --config ../mongod.conf
+
+
+export PATH=$PATH:/usr/local/mysql/bin/
+mysql -uroot -proot
+
+drop database eshop_order_db;
+create database eshop_order_db;
+
+drop database eshop_inventory_db;
+create database eshop_inventory_db;
+
+
+vault server --dev --dev-root-token-id="00000000-0000-0000-0000-000000000000"
+
+export VAULT_ADDR=http://127.0.0.1:8200
+
+vault kv delete secret/application
+vault kv delete secret/product-service
+vault kv delete secret/order-service
+vault kv delete secret/inventory-service
+
+vault kv put secret/application kafka.host=localhost kafka.port=9092
+vault kv put secret/product-service mongodb.url=mongodb://localhost:27017/eshop_product_db
+vault kv put secret/order-service mysql.url=jdbc:mysql://localhost:3306/eshop_order_db mysql.username=root mysql.password=root
+vault kv put secret/inventory-service mysql.url=jdbc:mysql://localhost:3306/eshop_inventory_db mysql.username=root mysql.password=root
+
+vault kv get secret/application
+vault kv get secret/product-service
+vault kv get secret/order-service
+vault kv get secret/inventory-service
+
+
+cd ShobhiT/Softwares/kafka-2.7.0/bin
+./zookeeper-server-start.sh ../config/zookeeper.properties
+./kafka-server-start.sh ../config/server.properties
+
+
+./kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic order-notification
+
+./kafka-topics.sh --bootstrap-server localhost:9092 --create --topic order-notification --replication-factor 1 --partitions 1
+
+./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic order-notification --from-beginning
+
+./kafka-console-producer.sh --bootstrap-server=localhost:9092 --topic order-notification
+
+
+
+Zipkin -
+cd ShobhiT/Softwares
+java -jar zipkin-server-2.23.2-exec.jar
+
+http://localhost:9411/zipkin/
+ 
+
+
+Eureka Server -
+http://localhost:8761
+
+
+Order Service			-	2 Instances
+Product Service			-	2 Instances
+Inventory Service		-	1 Instance
+Notification Service	-	1 Instance
+
+
+Config Server -
+http://localhost:9000/product-service/default
+http://localhost:9000/order-service/default
+
+
+API Gateway -
+http://localhost:8888/product/api
+http://localhost:8888/order/api
+http://localhost:8888/inventory/api
+
+
+Product Service -
+http://localhost:XXX/product/api
+{"name": "iPhone 6", "description": "iPhone 6 Mobile Phone", "price": 26500}
+
+
+Order Service -
+http://localhost:XXX/order/api
+{"orderAmount": 15000, "inventories": [{"inventoryId": 1, "quantity": 8}, {"inventoryId": 2, "quantity": 10}]}
+
+
+Inventory Service -
+http://localhost:XXX/inventory/api
+{"inventoryName": "Mobile", "quantity": 15}
+
+Notification Service -
+{"payload":"Order Placed Successfully - 1","headers":{"id":"a93305fb-4890-c307-e3aa-8fb8a0ded7c1","timestamp":1624295003305}}
+
